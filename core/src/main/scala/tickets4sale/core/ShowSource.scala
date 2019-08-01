@@ -1,7 +1,5 @@
 package tickets4sale.core
 
-import java.time.LocalDate
-
 import Domain._
 import cats.effect.Sync
 import kantan.codecs.Decoder
@@ -15,9 +13,7 @@ import scala.language.higherKinds
 object ShowSource {
   def csvFailFast[F[_], T: CsvSource](source: T)(implicit F: Sync[F]): F[List[Show]] =
     F.delay {
-      import CustomDecoders._
-
-      implicit val showDecoder = customizedShowRowDecoder
+      import CustomFormatDecoders._
 
       source
         .asCsvReader[Show](rfc.withoutHeader)
@@ -32,7 +28,7 @@ object ShowSource {
       case _                                => true
     }
 
-  object CustomDecoders {
+  object CustomFormatDecoders {
     implicit val genreCaseInsensitiveDecoder: Decoder[String, Genre, DecodeError, codecs.type] =
       Decoder.from { raw =>
         Genre.withNameInsensitiveOption(raw) match {
@@ -41,7 +37,7 @@ object ShowSource {
         }
       }
 
-    def customizedShowRowDecoder(implicit generic: RowDecoder[Show]): RowDecoder[Show] =
-      generic map { record => record.copy(title = record.title.toLowerCase) }
+    implicit val stringLowercaseDecoder: Decoder[String, String, DecodeError, codecs.type] =
+      Decoder.from { raw => Right(raw.toLowerCase) }
   }
 }
