@@ -12,6 +12,8 @@ val commonSettings = Seq(
     "-feature",
   ),
   libraryDependencies +=  "com.lihaoyi" %% "utest" % "0.7.1" % "test",
+  testFrameworks      += new TestFramework("utest.runner.Framework"),
+  
   addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
 )
 
@@ -27,9 +29,7 @@ lazy val core = (project in file("core"))
       "com.beachape"  %% "enumeratum"            % "1.5.13",
 
       "com.nrinaudo"  %% "kantan.csv-java8"      % kantanCsvVersion,
-      "com.nrinaudo"  %% "kantan.csv-cats"       % kantanCsvVersion,
       "com.nrinaudo"  %% "kantan.csv-generic"    % kantanCsvVersion,
-      "com.nrinaudo"  %% "kantan.csv-enumeratum" % kantanCsvVersion,
     )
   )
 

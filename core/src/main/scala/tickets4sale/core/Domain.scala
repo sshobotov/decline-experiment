@@ -2,11 +2,11 @@ package tickets4sale.core
 
 import java.time.LocalDate
 
-import enumeratum.EnumEntry.Uppercase
+import enumeratum.EnumEntry.Lowercase
 import enumeratum.{Enum, EnumEntry}
 
 object Domain {
-  sealed trait Genre extends EnumEntry with Uppercase
+  sealed trait Genre extends EnumEntry with Lowercase
 
   object Genre extends Enum[Genre] {
     case object Drama    extends Genre
