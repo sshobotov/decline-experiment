@@ -1,12 +1,13 @@
 package tickets4sale.cli
 
+import java.io.File
 import java.nio.file.Path
 import java.time.LocalDate
 
 import cats.implicits._
 import cats.effect.Concurrent
 import tickets4sale.core.Domain.{Genre, TicketsStatus}
-import tickets4sale.core.{InventoryRules, ShowSource}
+import tickets4sale.core.{InventoryRules, ShowsSource}
 import tickets4sale.core.Syntax._
 import InventoryHandler._
 
@@ -18,7 +19,7 @@ class InventoryHandler[F[_]: Concurrent](showDurationDays: Int, rules: Inventory
     val filterRight = showDate.plusDays(showDurationDays)
 
     for {
-      shows   <- ShowSource.csvFailFast[F](filePath.toFile)
+      shows   <- ShowsSource.csvFailFast[F, File](filePath.toFile)
       matched =  shows.filter(_.openingDate.isBetween(filterLeft, filterRight))
       grouped =  matched.groupBy(_.genre)
     } yield InventoryResponse(

@@ -10,10 +10,10 @@ import kantan.csv.generic._
 
 import scala.language.higherKinds
 
-object ShowSource {
+object ShowsSource {
   def csvFailFast[F[_], T: CsvSource](source: T)(implicit F: Sync[F]): F[List[Show]] =
     F.delay {
-      import CustomFormatDecoders._
+      import CustomCsvDecoders._
 
       source
         .asCsvReader[Show](rfc.withoutHeader)
@@ -28,7 +28,7 @@ object ShowSource {
       case _                                => true
     }
 
-  object CustomFormatDecoders {
+  private object CustomCsvDecoders {
     implicit val genreCaseInsensitiveDecoder: Decoder[String, Genre, DecodeError, codecs.type] =
       Decoder.from { raw =>
         Genre.withNameInsensitiveOption(raw) match {
