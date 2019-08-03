@@ -1,33 +1,31 @@
 package tickets4sale.cli
 
-import java.io.File
 import java.nio.file.Path
 import java.time.LocalDate
 
 import cats.implicits._
-import cats.effect.Concurrent
+import cats.effect.Sync
 import tickets4sale.core.Domain.{Genre, TicketsStatus}
-import tickets4sale.core.{InventoryRules, ShowsSource}
-import tickets4sale.core.Syntax._
+import tickets4sale.core.{InventoryCalculator, StaticShowRepository}
 import InventoryHandler._
+import enumeratum.EnumEntry
+import io.circe.Encoder
+import tickets4sale.core.AmsterdamInventoryCalculator.Assumptions
 
 import scala.language.higherKinds
 
-class InventoryHandler[F[_]: Concurrent](showDurationDays: Int, rules: InventoryRules) {
+class InventoryHandler[F[_]: Sync](showDurationDays: Int, rules: InventoryCalculator) {
   def handle(filePath: Path, queryDate: LocalDate, showDate: LocalDate): F[InventoryResponse] = {
-    val filterLeft  = showDate.minusDays(showDurationDays)
-    val filterRight = showDate.plusDays(showDurationDays)
-
     for {
-      shows   <- ShowsSource.csvFailFast[F, File](filePath.toFile)
-      matched =  shows.filter(_.openingDate.isBetween(filterLeft, filterRight))
-      grouped =  matched.groupBy(_.genre)
+      showsRepo <- StaticShowRepository.defaultCsv[F](filePath.toFile, Assumptions.ShowRunDurationDays)
+      records   <- showsRepo.find(showDate)
     } yield InventoryResponse(
-      grouped
+      records
+        .groupBy(_.genre)
         .map { case (genre, list) =>
           val shows = list map { show =>
-            val inventory = rules.inventory(show, queryDate)
-            val status    = rules.status(show, queryDate)
+            val inventory = rules.inventory(show, showDate, queryDate)
+            val status    = rules.status(showDate, queryDate)
 
             InventoryShow(show.title, inventory.left, inventory.available, status)
           }
@@ -39,9 +37,9 @@ class InventoryHandler[F[_]: Concurrent](showDurationDays: Int, rules: Inventory
 }
 
 object InventoryHandler {
-  final case class InventoryShow(title: String, tickets_left: Int, tickets_available: Int, status: TicketsStatus)
+  final case class InventoryResponse(inventory: List[InventoryGenre])
 
   final case class InventoryGenre(genre: Genre, shows: List[InventoryShow])
 
-  final case class InventoryResponse(inventory: List[InventoryGenre])
+  final case class InventoryShow(title: String, tickets_left: Int, tickets_available: Int, status: TicketsStatus)
 }

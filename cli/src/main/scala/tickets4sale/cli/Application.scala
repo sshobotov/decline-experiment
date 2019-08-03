@@ -10,7 +10,8 @@ import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
 import com.monovore.decline._
 import io.circe.syntax._
-import tickets4sale.core.InventoryRules.AmsterdamInventoryRules
+import tickets4sale.core.AmsterdamInventoryCalculator
+import tickets4sale.core.AmsterdamInventoryCalculator.Assumptions
 
 import scala.concurrent.ExecutionContext
 
@@ -24,17 +25,15 @@ object Application extends CommandApp(
 
     (fileArg, queryDateArg, showDateArg) mapN { (file, queryDate, showDate) =>
       import io.circe.generic.auto._
+      import InventoryHandler._
 
       implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
       implicit val tm: Timer[IO]        = IO.timer(ExecutionContext.global)
 
-      val response =
-        new InventoryHandler[IO](
-            AmsterdamInventoryRules.EmpiricalKnowledge.ShowRunDurationDays
-          , new AmsterdamInventoryRules
-        ).handle(file, queryDate, showDate).unsafeRunSync()
+      val handler  = new InventoryHandler[IO](Assumptions.ShowRunDurationDays, new AmsterdamInventoryCalculator)
+      val response = handler.handle(file, queryDate, showDate).unsafeRunSync()
 
-      println(response.asJson)
+      println(response)
     }
   }
 )

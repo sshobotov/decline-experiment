@@ -3,28 +3,38 @@ package tickets4sale.api
 import java.time.LocalDate
 
 import cats.effect.IO
+import enumeratum.EnumEntry
+import io.circe.Encoder
 import io.circe.generic.auto._
 import org.http4s._
 import org.http4s.dsl.io._
 import org.http4s.circe.CirceEntityDecoder._
 import org.http4s.circe.CirceEntityEncoder._
 import tickets4sale.core.Domain._
-import tickets4sale.core.InventoryRules
+import tickets4sale.core.{InventoryCalculator, PriceRepository, ShowRepository}
 
 object InventoryService {
-  def routes(entities: List[Show], showDurationDays: Int, rules: InventoryRules, pricing: GenrePricing): HttpRoutes[IO] =
+  def routes(
+      showRepository:   ShowRepository[IO]
+    , priceRepository:  PriceRepository[IO]
+    , calc:             InventoryCalculator
+  ): HttpRoutes[IO] =
     HttpRoutes.of {
       case req @ POST -> Root / "inventory" =>
         for {
-          query   <- req.as[InventoryRequest]
-          grouped =  entities.groupBy(_.genre)
+          queryDate <- req.as[InventoryRequest] map { _.`show-date` }
+          records   <- showRepository.find(queryDate)
+          pricing   <- priceRepository.genres
+
           results =
-            grouped
+            records
+              .groupBy(_.genre)
               .map { case (genre, list) =>
+                val today = LocalDate.now
                 val shows = list map { show =>
-                  val inventory = rules.inventory(show, query.`show-date`)
-                  val status    = rules.status(show, query.`show-date`)
-                  val price     = rules.price(show, query.`show-date`, pricing)
+                  val inventory = calc.inventory(show, queryDate, today)
+                  val status    = calc.status(queryDate, today)
+                  val price     = calc.price(show, today, pricing(genre))
 
                   InventoryShow(show.title, inventory.left, inventory.available, status, price)
                 }
@@ -48,4 +58,8 @@ object InventoryService {
     , status:            TicketsStatus
     , price:             PriceEuro
   )
+
+  implicit val numberEncoder: Encoder[Int] = Encoder.encodeString.contramap(_.toString)
+
+  implicit def enumEncoder[T <: EnumEntry]: Encoder[T] = Encoder.encodeString.contramap(_.entryName)
 }

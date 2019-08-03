@@ -1,35 +1,27 @@
 package tickets4sale.api
 
-import java.io.File
-
-import cats.implicits._
 import cats.effect.{ExitCode, IO, IOApp}
 import org.http4s.implicits._
 import org.http4s.server.blaze.BlazeServerBuilder
-import tickets4sale.core.InventoryRules.AmsterdamInventoryRules
-import tickets4sale.core.{ShowsSource, Syntax}
-import tickets4sale.core.Domain.{Genre, GenrePricing}
+import tickets4sale.core.AmsterdamInventoryCalculator
+import tickets4sale.core.AmsterdamInventoryCalculator.Assumptions
+import tickets4sale.core.{StaticPriceRepository, StaticShowRepository}
 
 object Application extends IOApp {
-  override def run(args: List[String]): IO[ExitCode] =
+  override def run(args: List[String]): IO[ExitCode] = {
+    val serverPort    = 8080
+    val showsResource = "shows.csv"
+
     for {
-      shows   <- ShowsSource.csvFailFast[IO, File](Syntax.resourceFile("example.csv"))
-      pricing: GenrePricing =  Map(
-          Genre.Musicals -> 70
-        , Genre.Comedy   -> 50
-        , Genre.Drama    -> 40
-      )
-      service =  InventoryService.routes(
-          shows
-        , AmsterdamInventoryRules.EmpiricalKnowledge.ShowRunDurationDays
-        , new AmsterdamInventoryRules
-        , pricing
-      )
-      _       <-
+      showRepo <- StaticShowRepository.defaultCsv[IO](showsResource, Assumptions.ShowRunDurationDays)
+      service  =  InventoryService.routes(showRepo, StaticPriceRepository[IO], new AmsterdamInventoryCalculator)
+      _ <-
         BlazeServerBuilder[IO]
-          .bindHttp(8080)
+          .bindHttp(serverPort)
           .withHttpApp(service.orNotFound)
           .resource
           .use(_ => IO.never)
-    } yield ExitCode.Success
+    } yield
+      ExitCode.Success
+  }
 }
