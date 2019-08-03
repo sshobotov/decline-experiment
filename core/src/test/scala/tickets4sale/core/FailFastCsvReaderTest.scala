@@ -19,7 +19,7 @@ object FailFastCsvReaderTest extends TestSuite {
           , Show("39 steps, the ", LocalDate.parse("2019-11-10"), Genre.Comedy)
           , Show("a midsummer night’s dream - in new orleans", LocalDate.parse("2020-04-28"), Genre.Drama)
         ))
-        val actual = reader.read[File](resourceFile("example.csv"))
+        val actual = reader.read[File](Files.resource("example.csv"))
 
         assert(expect == actual)
       }

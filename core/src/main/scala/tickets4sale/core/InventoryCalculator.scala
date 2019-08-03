@@ -14,7 +14,7 @@ trait InventoryCalculator {
 }
 
 final class AmsterdamInventoryCalculator extends InventoryCalculator {
-  import AmsterdamInventoryCalculator._
+  import AmsterdamKnowledgeBase._
 
   override def status(showDate: LocalDate, queryDate: LocalDate): TicketsStatus = {
     if (queryDate isAfter showDate)                      TicketsStatus.InThePast
@@ -67,7 +67,7 @@ final class AmsterdamInventoryCalculator extends InventoryCalculator {
     date minusDays Regulations.DaysBeforeShowTicketsSaleStarts
 }
 
-object AmsterdamInventoryCalculator {
+object AmsterdamKnowledgeBase {
   val BigHallCapacity   = 200
   val SmallHallCapacity = 100
 

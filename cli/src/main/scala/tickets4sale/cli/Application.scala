@@ -9,9 +9,8 @@ import cats.data.{Validated, ValidatedNel}
 import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
 import com.monovore.decline._
-import io.circe.syntax._
 import tickets4sale.core.AmsterdamInventoryCalculator
-import tickets4sale.core.AmsterdamInventoryCalculator.Assumptions
+import tickets4sale.core.AmsterdamKnowledgeBase.Assumptions
 
 import scala.concurrent.ExecutionContext
 
@@ -24,16 +23,13 @@ object Application extends CommandApp(
     val showDateArg  = Opts.argument[LocalDate](metavar = "show-date")
 
     (fileArg, queryDateArg, showDateArg) mapN { (file, queryDate, showDate) =>
-      import io.circe.generic.auto._
-      import InventoryHandler._
-
       implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
       implicit val tm: Timer[IO]        = IO.timer(ExecutionContext.global)
+      implicit val console: Console[IO] = Console.default[IO]()
 
-      val handler  = new InventoryHandler[IO](Assumptions.ShowRunDurationDays, new AmsterdamInventoryCalculator)
-      val response = handler.handle(file, queryDate, showDate).unsafeRunSync()
-
-      println(response)
+      new InventoryHandler[IO](Assumptions.ShowRunDurationDays, new AmsterdamInventoryCalculator)
+        .handle(file.toFile, queryDate, showDate)
+        .unsafeRunSync()
     }
   }
 )

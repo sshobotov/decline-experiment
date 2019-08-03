@@ -9,9 +9,9 @@ object Domain {
   sealed trait Genre extends EnumEntry with Lowercase
 
   object Genre extends Enum[Genre] {
-    case object Drama    extends Genre
-    case object Comedy   extends Genre
-    case object Musicals extends Genre
+    case object Drama   extends Genre
+    case object Comedy  extends Genre
+    case object Musical extends Genre
 
     override val values = findValues
   }

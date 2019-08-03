@@ -1,10 +1,11 @@
 package tickets4sale.api
 
+import cats.implicits._
 import cats.effect.{ExitCode, IO, IOApp}
 import org.http4s.implicits._
 import org.http4s.server.blaze.BlazeServerBuilder
 import tickets4sale.core.AmsterdamInventoryCalculator
-import tickets4sale.core.AmsterdamInventoryCalculator.Assumptions
+import tickets4sale.core.AmsterdamKnowledgeBase.Assumptions
 import tickets4sale.core.{StaticPriceRepository, StaticShowRepository}
 
 object Application extends IOApp {
@@ -20,7 +21,9 @@ object Application extends IOApp {
           .bindHttp(serverPort)
           .withHttpApp(service.orNotFound)
           .resource
-          .use(_ => IO.never)
+          .use { _ =>
+            IO.delay(println(s"Server started at $serverPort")) *> IO.never
+          }
     } yield
       ExitCode.Success
   }

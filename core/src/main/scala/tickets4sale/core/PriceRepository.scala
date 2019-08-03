@@ -12,7 +12,7 @@ trait PriceRepository[F[_]] {
 final class StaticPriceRepository[F[_]](implicit F: Sync[F]) extends PriceRepository[F] {
   private val records: GenrePricing =
     Map(
-        Genre.Musicals -> 70
+        Genre.Musical -> 70
       , Genre.Comedy   -> 50
       , Genre.Drama    -> 40
     )

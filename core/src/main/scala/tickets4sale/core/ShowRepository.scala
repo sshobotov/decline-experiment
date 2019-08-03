@@ -1,11 +1,11 @@
 package tickets4sale.core
 
-import java.io.File
+import java.io.{File, InputStream}
 import java.time.LocalDate
 
 import Domain._
 import cats.implicits._
-import cats.effect.Sync
+import cats.effect.{Resource, Sync}
 import kantan.codecs.Decoder
 import kantan.csv._
 import kantan.csv.ops._
@@ -34,8 +34,10 @@ final class StaticShowRepository[F[_]](records: List[Show], showRunsDays: Int)(i
 }
 
 object StaticShowRepository {
-  def defaultCsv[F[_]: Sync](resourceName: String, showRunsDays: Int): F[StaticShowRepository[F]] =
-    defaultCsv[F](resourceFile(resourceName), showRunsDays)
+  def defaultCsv[F[_]](resourceName: String, showRunsDays: Int)(implicit F: Sync[F]): F[StaticShowRepository[F]] =
+    Resource.make(F.delay(Files.resourceStream(resourceName)))(stream => F.delay(stream.close())) use { stream =>
+      csvSource[F, InputStream](stream, new FailFastCsvReader, showRunsDays)
+    }
 
   def defaultCsv[F[_]: Sync](file: File, showRunsDays: Int): F[StaticShowRepository[F]] =
     csvSource[F, File](file, new FailFastCsvReader, showRunsDays)
@@ -50,8 +52,6 @@ object StaticShowRepository {
       records <- F.fromEither(read)
     } yield
       new StaticShowRepository[F](records, showRunsDays)
-
-  def resourceFile(path: String) = new File(getClass.getClassLoader.getResource(path).getFile)
 
   trait CsvReader {
     def read[T: CsvSource](source: T): Either[Throwable, List[Show]]

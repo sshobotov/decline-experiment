@@ -1,7 +1,6 @@
-val enumeratumCirceVersion  = "1.5.13"
-val kantanCsvVersion        = "0.5.1"
-val http4sVersion           = "0.20.6"
-val circeVersion            = "0.11.1"
+val kantanCsvVersion = "0.5.1"
+val http4sVersion    = "0.20.6"
+val circeVersion     = "0.11.1"
 
 val commonSettings = Seq(
   scalaVersion        :=  "2.12.8",
@@ -34,7 +33,7 @@ lazy val core = (project in file("core"))
   )
 
 lazy val cli  = (project in file("cli"))
-  .dependsOn(core)
+  .dependsOn(core % "compile->compile;test->test")
   .settings(
     commonSettings,
     name                :=  "tickets4sale-cli",
@@ -42,12 +41,13 @@ lazy val cli  = (project in file("cli"))
     libraryDependencies ++= Seq(
       "com.monovore"  %% "decline"               % "0.5.0",
       "io.circe"      %% "circe-generic"         % circeVersion,
-      "com.beachape"  %% "enumeratum"            % enumeratumCirceVersion,
-    )
+    ),
+    
+    mainClass in assembly := Some("tickets4sale.cli.Application")
   )
 
 lazy val api = (project in file("api"))
-  .dependsOn(core)
+  .dependsOn(core % "compile->compile;test->test")
   .settings(
     commonSettings,
     name                :=  "tickets4sale-api",
@@ -57,6 +57,5 @@ lazy val api = (project in file("api"))
       "org.http4s"    %% "http4s-blaze-server"   % http4sVersion,
       "org.http4s"    %% "http4s-circe"          % http4sVersion,
       "io.circe"      %% "circe-generic"         % circeVersion,
-      "com.beachape"  %% "enumeratum"            % enumeratumCirceVersion,
     )
   )

@@ -2,7 +2,7 @@ package tickets4sale.core
 
 import java.time.LocalDate
 
-import AmsterdamInventoryCalculator.{Assumptions, Regulations}
+import AmsterdamKnowledgeBase.{Assumptions, Regulations}
 import Domain._
 import utest._
 

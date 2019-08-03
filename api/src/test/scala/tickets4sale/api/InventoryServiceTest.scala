@@ -20,9 +20,9 @@ object InventoryServiceTest extends TestSuite {
       implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
       implicit val tm: Timer[IO]        = IO.timer(ExecutionContext.global)
 
-      val shows   = List(Show("cats", LocalDate.parse("2018-06-01"), Genre.Musicals))
+      val shows   = List(Show("cats", LocalDate.parse("2018-06-01"), Genre.Musical))
       val service = InventoryService.routes(
-          new StaticShowRepository[IO](shows, 50)
+          new StaticShowRepository[IO](shows, 20)
         , StaticPriceRepository[IO]
         , dummyCalculator
       )
@@ -32,18 +32,20 @@ object InventoryServiceTest extends TestSuite {
           .withEntity(InventoryRequest(LocalDate.parse("2018-06-20")))
       val response = service.orNotFound.run(request).unsafeRunSync()
 
-      val expect = """{"inventory":[{"genre":"musicals","shows":[{"title":"cats","tickets_left":"100","tickets_available":"5","status":"open for sale","price":"50"}]}]}"""
+      val expect = """{"inventory":[{"genre":"musical","shows":[{"title":"cats","tickets_left":"100","tickets_available":"5","status":"open for sale","price":"50"}]}]}"""
       val actual = response.bodyAsText.compile.toList.unsafeRunSync().mkString
 
       assert(expect == actual)
     }
   }
 
-  private def dummyCalculator = new InventoryCalculator {
-    override def status(showDate: LocalDate, queryDate: LocalDate): TicketsStatus = TicketsStatus.OpenForSale
+  private def dummyCalculator =
+    new InventoryCalculator {
+      override def status(showDate: LocalDate, queryDate: LocalDate): TicketsStatus = TicketsStatus.OpenForSale
 
-    override def inventory(show: Domain.Show, showDate: LocalDate, queryDate: LocalDate): Domain.Inventory = Inventory(100, 5)
+      override def inventory(show: Domain.Show, showDate: LocalDate, queryDate: LocalDate): Domain.Inventory =
+        Inventory(100, 5)
 
-    override def price(show: Domain.Show, showDate: LocalDate, price: PriceEuro): PriceEuro = 50
-  }
+      override def price(show: Domain.Show, showDate: LocalDate, price: PriceEuro): PriceEuro = 50
+    }
 }
